@@ -227,3 +227,122 @@ tr:last-child td{border:0}
     <label for="kd">Date of birth (YYYY-MM-DD)</label><input id="kd" type="text" inputmode="numeric" placeholder="1990-04-23">
     <label for="kc">Country (2 letters, e.g. KE)</label><input id="kc" type="text" maxlength="2" autocapitalize="characters">
     <label for="kt">ID type</label><select id="kt"><option value="national_id">National ID</option><option value="passport">Passport</option><op
+<label for="kid">ID number</label><input id="kid" type="text">
+<button class="cta" id="ksub" style="background:var(--ac);color:var(--acx)">Submit for verification</button>
+   </div>
+  </div>
+  <div class="p"><h2>Account</h2><div class="row"><span>Signed in as</span><b id="acEmail">-</b></div></div>
+ </div>
+</section>
+
+</main>
+<div id="toast"></div>
+
+<script>
+var API = "https://my-elite-backend-q62s.onrender.com";
+var authMode = "signin";
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg){
+  var t = $("toast");
+  t.textContent = msg;
+  t.className = "show";
+  setTimeout(function(){ t.className = ""; }, 2500);
+}
+
+function showApp(email){
+  $("auth").style.display = "none";
+  $("who").textContent = email;
+  $("acEmail").textContent = email;
+  $("lo").hidden = false;
+  $("mode").textContent = "Practice";
+  $("navAcct").hidden = false;
+}
+
+function showAuth(){
+  $("auth").style.display = "flex";
+  $("lo").hidden = true;
+  $("navAcct").hidden = true;
+}
+
+function setAuthMode(m){
+  authMode = m;
+  var btns = $("atab").querySelectorAll("button");
+  btns[0].className = "buy" + (m === "signin" ? " on" : "");
+  btns[1].className = "buy" + (m === "signup" ? " on" : "");
+  $("ago").textContent = m === "signin" ? "Sign in" : "Create account";
+  $("aerr").textContent = "";
+}
+
+$("atab").querySelectorAll("button")[0].onclick = function(){ setAuthMode("signin"); };
+$("atab").querySelectorAll("button")[1].onclick = function(){ setAuthMode("signup"); };
+
+$("ago").onclick = function(){
+  var email = $("ae").value.trim();
+  var password = $("ap").value;
+  $("aerr").textContent = "";
+
+  if (!email || !password){
+    $("aerr").textContent = "Enter your email and password";
+    return;
+  }
+  if (authMode === "signup" && (password.length < 10 || !/[0-9\W]/.test(password))){
+    $("aerr").textContent = "Password needs 10+ characters with a number or symbol";
+    return;
+  }
+
+  var btn = $("ago");
+  var label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Please wait...";
+
+  var path = authMode === "signup" ? "/signup" : "/login";
+  var body = authMode === "signup"
+    ? { name: email, email: email, phone: "0000000000", password: password }
+    : { email: email, password: password };
+
+  fetch(API + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      btn.disabled = false;
+      btn.textContent = label;
+      if (data.success){
+        localStorage.setItem("eliteUser", email);
+        showApp(email);
+        toast(authMode === "signup" ? "Account created" : "Welcome back");
+      } else {
+        $("aerr").textContent = data.error || "Something went wrong";
+      }
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.textContent = label;
+      $("aerr").textContent = "Cannot reach server. If it was idle, wait 50 seconds and try again.";
+    });
+};
+
+$("lo").onclick = function(){
+  localStorage.removeItem("eliteUser");
+  showAuth();
+};
+
+document.querySelectorAll("nav button").forEach(function(b){
+  b.onclick = function(){
+    document.querySelectorAll("nav button").forEach(function(x){ x.classList.remove("on"); });
+    document.querySelectorAll("section").forEach(function(s){ s.classList.remove("on"); });
+    b.classList.add("on");
+    var target = $(b.getAttribute("data-t"));
+    if (target) target.classList.add("on");
+  };
+});
+
+var saved = localStorage.getItem("eliteUser");
+if (saved){ showApp(saved); } else { showAuth(); }
+</script>
+</body>
+</html>
