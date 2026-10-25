@@ -217,6 +217,28 @@ tr:last-child td{border:0}
    <h2 style="margin-top:18px">Recent activity</h2><div id="wh"><div class="tag">Loading…</div></div></div>
  </div>
 </section>
+<input id="phone" placeholder="07xxxxxxxx" />
+<input id="amount" type="number" placeholder="Amount" />
+<button onclick="deposit()">Deposit with M-Pesa</button>
+
+<script>
+  async function deposit() {
+    const phone = document.getElementById('phone').value;
+    const amount = document.getElementById('amount').value;
+    const res = await fetch('/mpesa/stkpush', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, amount }),
+    });
+    const data = await res.json();
+    if (data.ResponseCode === '0') {
+      alert('Check your phone and enter your M-Pesa PIN.');
+    } else {
+      alert('Something went wrong. Try again.');
+      console.log(data);
+    }
+  }
+</script>
 
 <section id="acct">
  <div class="g c2">
