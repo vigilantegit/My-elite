@@ -639,6 +639,127 @@ $("go").onclick = placeOrder;
 setInterval(updateTicket, 2000);
 renderOrders();
 updateTicket();
+// ---------- Dashboard and Wallet ----------
+function coinValue(sym2, amt){
+  // uses live price for the pair currently shown, otherwise last known price
+  if (sym2 === base() && market.price) return amt * market.price;
+  var last = Number(localStorage.getItem("eliteLast_" + sym2)) || 0;
+  return amt * last;
+}
+
+function rememberPrice(){
+  if (market.price) localStorage.setItem("eliteLast_" + base(), market.price);
+}
+
+function renderDashboard(){
+  var a = getAcct();
+  rememberPrice();
+  var coinsTotal = 0;
+  var legend = "";
+  var bar = "";
+  var palette = ["var(--ac)", "var(--up)", "var(--dn)", "var(--mute)"];
+  var parts = [{ name: "USDT cash", val: a.usdt }];
+
+  Object.keys(a.coins).forEach(function(k){
+    if (a.coins[k] > 0){
+      var v = coinValue(k, a.coins[k]);
+      coinsTotal += v;
+      parts.push({ name: k, val: v });
+    }
+  });
+
+  var total = a.usdt + coinsTotal;
+  $("dEq").textContent = total.toFixed(2) + " USDT";
+  $("dCash").textContent = a.usdt.toFixed(2);
+  $("dOrd").textContent = a.orders.length;
+
+  var dep = 0;
+  (a.deposits || []).forEach(function(d){
+    if (Date.now() - d.time < 30 * 86400000) dep += d.usd;
+  });
+  $("dDep").textContent = "$" + dep.toFixed(2);
+
+  parts.forEach(function(p, i){
+    var pct = total ? (p.val / total * 100) : 0;
+    bar += '<div style="width:' + pct + '%;background:' + palette[i % palette.length] + '"></div>';
+    legend += '<div class="lg"><span><i style="background:' + palette[i % palette.length] + '"></i>' + p.name + '</span><b>' + p.val.toFixed(2) + " (" + pct.toFixed(1) + '%)</b></div>';
+  });
+  $("dBar").innerHTML = bar;
+  $("dLeg").innerHTML = legend;
+
+  var fund = (a.deposits || []).filter(function(d){ return Date.now() - d.time < 30 * 86400000; });
+  if (fund.length){
+    var byM = {};
+    fund.forEach(function(d){ byM[d.method] = (byM[d.method] || 0) + d.usd; });
+    var fb = "", fl = "", i2 = 0;
+    Object.keys(byM).forEach(function(m){
+      var pct2 = byM[m] / dep * 100;
+      fb += '<div style="width:' + pct2 + '%;background:' + palette[i2 % palette.length] + '"></div>';
+      fl += '<div class="lg"><span><i style="background:' + palette[i2 % palette.length] + '"></i>' + m + '</span><b>$' + byM[m].toFixed(2) + '</b></div>';
+      i2++;
+    });
+    $("fBar").innerHTML = fb;
+    $("fLeg").innerHTML = fl;
+  } else {
+    $("fBar").innerHTML = "";
+    $("fLeg").innerHTML = '<div class="tag">No deposits yet</div>';
+  }
+
+  var t = $("dTr");
+  if (!a.orders.length){
+    t.innerHTML = '<tr><td class="tag">No orders yet</td></tr>';
+  } else {
+    var h = "<tr><th>Time</th><th>Pair</th><th>Side</th><th>Price</th><th>Size</th></tr>";
+    a.orders.slice(0, 10).forEach(function(o){
+      h += "<tr><td>" + new Date(o.time).toLocaleString() + "</td><td>" + o.pair + "</td><td class='" + (o.side === "buy" ? "up" : "dn") + "'>" + o.side.toUpperCase() + "</td><td>" + fmt(o.price) + "</td><td>" + o.size + "</td></tr>";
+    });
+    t.innerHTML = h;
+  }
+}
+
+function renderWallet(){
+  var a = getAcct();
+  $("wbal").textContent = a.usdt.toFixed(2) + " USDT";
+  $("wav").textContent = a.usdt.toFixed(2) + " USDT";
+  $("wheld").textContent = "0.00 USDT";
+
+  var items = [];
+  (a.deposits || []).forEach(function(d){
+    items.push({ time: d.time, text: "Deposit via " + d.method, amt: "+" + d.usd.toFixed(2) + " USD", cls: "up" });
+  });
+  a.orders.slice(0, 5).forEach(function(o){
+    items.push({ time: o.time, text: o.side.toUpperCase() + " " + o.size + " " + o.pair, amt: fmt(o.price), cls: o.side === "buy" ? "up" : "dn" });
+  });
+  items.sort(function(x, y){ return y.time - x.time; });
+
+  if (!items.length){
+    $("wh").innerHTML = '<div class="tag">No activity yet</div>';
+  } else {
+    $("wh").innerHTML = items.slice(0, 8).map(function(it){
+      return '<div class="row"><span>' + new Date(it.time).toLocaleDateString() + " - " + it.text + '</span><b class="' + it.cls + '">' + it.amt + '</b></div>';
+    }).join("");
+  }
+}
+
+function refreshPages(){
+  renderDashboard();
+  renderWallet();
+}
+
+document.querySelectorAll("nav button").forEach(function(b){
+  b.addEventListener("click", function(){
+    var t = b.getAttribute("data-t");
+    if (t === "dash" || t === "wallet") refreshPages();
+  });
+});
+
+// Link the Dashboard "Add funds" button to the Wallet page
+$("gw").onclick = function(){
+  document.querySelector('nav button[data-t="wallet"]').click();
+};
+
+setInterval(refreshPages, 5000);
+refreshPages();
 </script>
 </body>
 </html>
