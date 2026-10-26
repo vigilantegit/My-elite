@@ -850,6 +850,18 @@ $("pair").onchange = function(){
     return realBook();
   };
 })();
+// ---------- Remove EUR/USD ----------
+(function removeForex(){
+  var sel = $("pair");
+  for (var i = sel.options.length - 1; i >= 0; i--){
+    if (sel.options[i].textContent === "EUR/USD") sel.remove(i);
+  }
+  if (market.pair === "EUR/USD"){
+    market.pair = "BTC/USDT";
+    sel.value = "BTC/USDT";
+    reloadAll();
+  }
+})();
 </script>
 </body>
 </html>
