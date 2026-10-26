@@ -190,6 +190,35 @@ app.get("/payments", async (req, res) => {
     .limit(10);
   res.json(list);
 });
+app.post("/payments/credit", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const list = await Payment.find({ email: email, status: "paid", credited: { $ne: true } });
+    let totalKES = 0;
+    for (const p of list) {
+      totalKES += p.amountKES;
+      p.credited = true;
+      await p.save();
+    }
+    res.json({ success: true, creditedKES: totalKES });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/payments/simulate", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const p = await Payment.findOne({ email: email, status: "pending" }).sort({ createdAt: -1 });
+    if (!p) return res.status(400).json({ error: "No pending deposit to simulate" });
+    p.status = "paid";
+    p.receipt = "SANDBOX" + Date.now();
+    await p.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running on port " + PORT));
