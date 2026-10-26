@@ -407,6 +407,123 @@ $("wgo").onclick = function(){
       st.textContent = "Cannot reach server. If it was idle, wait 50 seconds and try again.";
     });
 };
+// ---------- Live market data (Trade page) ----------
+var BINANCE = "https://api.binance.com/api/v3";
+var market = { pair: "BTC/USDT", tf: "1h", candles: [], price: 0 };
+
+function sym(){ return market.pair.replace("/", ""); }
+
+function fmt(n){
+  n = Number(n);
+  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (n >= 1) return n.toFixed(2);
+  return n.toFixed(4);
+}
+
+function drawChart(){
+  var c = market.candles;
+  var svg = $("chart");
+  if (!c.length){ svg.innerHTML = ""; return; }
+  var W = 640, H = 300, padR = 56, padT = 10, padB = 10;
+  var hi = Math.max.apply(null, c.map(function(x){ return x.h; }));
+  var lo = Math.min.apply(null, c.map(function(x){ return x.l; }));
+  var span = (hi - lo) || 1;
+  var step = (W - padR) / c.length;
+  var bw = Math.max(1, step * 0.6);
+  function y(v){ return padT + (hi - v) / span * (H - padT - padB); }
+  var out = "";
+  for (var g = 0; g < 5; g++){
+    var gv = lo + span * g / 4;
+    out += '<line x1="0" x2="' + (W - padR) + '" y1="' + y(gv) + '" y2="' + y(gv) + '" stroke="var(--line)" stroke-width="1"/>';
+    out += '<text x="' + (W - padR + 4) + '" y="' + (y(gv) + 4) + '" font-size="10" fill="var(--mute)">' + fmt(gv) + '</text>';
+  }
+  c.forEach(function(k, i){
+    var x = i * step + step / 2;
+    var col = k.c >= k.o ? "var(--up)" : "var(--dn)";
+    out += '<line x1="' + x + '" x2="' + x + '" y1="' + y(k.h) + '" y2="' + y(k.l) + '" stroke="' + col + '" stroke-width="1"/>';
+    var top = y(Math.max(k.o, k.c));
+    var hgt = Math.max(1, Math.abs(y(k.o) - y(k.c)));
+    out += '<rect x="' + (x - bw / 2) + '" y="' + top + '" width="' + bw + '" height="' + hgt + '" fill="' + col + '"/>';
+  });
+  svg.innerHTML = out;
+}
+
+function loadCandles(){
+  var url = BINANCE + "/klines?symbol=" + sym() + "&interval=" + market.tf + "&limit=60";
+  return fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      market.candles = rows.map(function(k){
+        return { o: +k[1], h: +k[2], l: +k[3], c: +k[4] };
+      });
+      drawChart();
+    });
+}
+
+function loadTicker(){
+  return fetch(BINANCE + "/ticker/24hr?symbol=" + sym())
+    .then(function(r){ return r.json(); })
+    .then(function(t){
+      market.price = +t.lastPrice;
+      $("px").textContent = fmt(t.lastPrice);
+      var pct = +t.priceChangePercent;
+      var chg = $("chg");
+      chg.textContent = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
+      chg.className = pct >= 0 ? "up" : "dn";
+      $("mode").textContent = "Live";
+      if (!$("pr").value) $("pr").value = t.lastPrice;
+    });
+}
+
+function loadBook(){
+  return fetch(BINANCE + "/depth?symbol=" + sym() + "&limit=8")
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var maxQ = 0;
+      d.asks.concat(d.bids).forEach(function(x){ maxQ = Math.max(maxQ, +x[1]); });
+      function row(x, cls){
+        var w = (+x[1] / maxQ * 100).toFixed(0);
+        var colr = cls === "dn" ? "var(--dn)" : "var(--up)";
+        return '<div><span class="bar" style="width:' + w + '%;background:' + colr + '"></span><span class="' + cls + '">' + fmt(x[0]) + '</span><span>' + (+x[1]).toFixed(4) + '</span></div>';
+      }
+      var html = d.asks.slice().reverse().map(function(x){ return row(x, "dn"); }).join("");
+      html += '<div class="mid">' + fmt(market.price) + '</div>';
+      html += d.bids.map(function(x){ return row(x, "up"); }).join("");
+      $("ob").innerHTML = html;
+    });
+}
+
+function refreshMarket(){
+  loadTicker().then(loadBook).catch(function(){
+    $("mode").textContent = "Offline";
+  });
+}
+
+function reloadAll(){
+  $("szl").textContent = "Size (" + market.pair.split("/")[0] + ")";
+  $("go").textContent = "Buy " + market.pair.split("/")[0];
+  $("pr").value = "";
+  loadCandles().catch(function(){});
+  refreshMarket();
+}
+
+$("pair").onchange = function(){
+  market.pair = $("pair").value;
+  reloadAll();
+};
+
+$("tf").querySelectorAll("button").forEach(function(b){
+  b.onclick = function(){
+    $("tf").querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+    b.classList.add("on");
+    market.tf = b.textContent;
+    loadCandles().catch(function(){});
+  };
+});
+
+reloadAll();
+setInterval(refreshMarket, 4000);
+setInterval(function(){ loadCandles().catch(function(){}); }, 30000);
 </script>
 </body>
 </html>
