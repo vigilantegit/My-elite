@@ -760,6 +760,194 @@ $("gw").onclick = function(){
 
 setInterval(refreshPages, 5000);
 refreshPages();
+// ---------- Digits game (practice only) ----------
+var DG = {
+  markets: { "Random 100": 100, "Random 50": 50, "Random 25": 25 },
+  market: "Random 100",
+  price: {},
+  ticks: {},
+  type: "match",
+  barrier: 5,
+  open: [],
+  hist: [],
+  margin: 0.97
+};
+
+function dgKey(){ return "eliteDG_" + (localStorage.getItem("eliteUser") || "guest"); }
+
+function dgBal(){
+  var v = localStorage.getItem(dgKey());
+  return v === null ? 1000 : Number(v);
+}
+
+function dgSetBal(v){ localStorage.setItem(dgKey(), v); }
+
+function dgDigit(p){
+  var s = p.toFixed(2);
+  return Number(s.charAt(s.length - 1));
+}
+
+// set up markets and dropdown
+(function dgInit(){
+  var sel = $("dgM");
+  Object.keys(DG.markets).forEach(function(m){
+    var o = document.createElement("option");
+    o.textContent = m;
+    sel.appendChild(o);
+    DG.price[m] = DG.markets[m] * (0.9 + Math.random() * 0.2);
+    DG.ticks[m] = [];
+    for (var i = 0; i < 500; i++) dgTickOne(m);
+  });
+  $("navDg").hidden = false;
+})();
+
+function dgTickOne(m){
+  var vol = DG.markets[m] * 0.002;
+  DG.price[m] += (Math.random() - 0.5) * 2 * vol;
+  if (DG.price[m] < 1) DG.price[m] = 1;
+  var p = Math.round(DG.price[m] * 100) / 100;
+  var last = DG.ticks[m].length ? DG.ticks[m][DG.ticks[m].length - 1].p : p;
+  DG.ticks[m].push({ p: p, d: dgDigit(p), up: p >= last });
+  if (DG.ticks[m].length > 600) DG.ticks[m].shift();
+}
+
+function dgWin(type, barrier, digit){
+  if (type === "match") return digit === barrier;
+  if (type === "differs") return digit !== barrier;
+  if (type === "over") return digit > barrier;
+  if (type === "under") return digit < barrier;
+  if (type === "even") return digit % 2 === 0;
+  return digit % 2 === 1;
+}
+
+function dgProb(type, barrier){
+  var n = 0;
+  for (var d = 0; d <= 9; d++) if (dgWin(type, barrier, d)) n++;
+  return n / 10;
+}
+
+function dgNeedsBarrier(){
+  return DG.type !== "even" && DG.type !== "odd";
+}
+
+function dgRender(){
+  var ticks = DG.ticks[DG.market];
+  var now = ticks[ticks.length - 1];
+  $("dgPx").innerHTML = now.p.toFixed(2).slice(0, -1) + '<span class="dgl">' + now.d + '</span>';
+
+  // last 20 digits stream
+  var s = "";
+  ticks.slice(-20).forEach(function(t){
+    s += '<div class="dgc ' + (t.up ? "u" : "d") + '">' + t.d + '</div>';
+  });
+  $("dgStream").innerHTML = s;
+
+  // frequency bars
+  var w = Number($("dgW").value);
+  var win = ticks.slice(-w);
+  var cnt = [0,0,0,0,0,0,0,0,0,0];
+  win.forEach(function(t){ cnt[t.d]++; });
+  var mx = Math.max.apply(null, cnt), mn = Math.min.apply(null, cnt);
+  var b = "";
+  for (var d = 0; d <= 9; d++){
+    var pct = cnt[d] / win.length * 100;
+    var cls = "dgb" + (d === DG.barrier && dgNeedsBarrier() ? " sel" : "") + (cnt[d] === mx ? " hi" : cnt[d] === mn ? " lo" : "");
+    b += '<button class="' + cls + '" data-d="' + d + '"><i class="pct">' + pct.toFixed(1) + '%</i><div class="col"><u style="height:' + (pct * 4) + '%"></u></div><b class="' + (d === now.d ? "now" : "") + '">' + d + '</b></button>';
+  }
+  $("dgBars").innerHTML = b;
+  $("dgBars").querySelectorAll("button").forEach(function(btn){
+    btn.onclick = function(){
+      DG.barrier = Number(btn.getAttribute("data-d"));
+      dgRender();
+      dgQuote();
+    };
+  });
+  dgQuote();
+  dgRenderTables();
+}
+
+function dgQuote(){
+  var prob = dgProb(DG.type, DG.barrier);
+  var stake = Number($("dgS").value) || 0;
+  var payout = prob > 0 ? stake * DG.margin / prob : 0;
+  $("dgBarLbl").textContent = dgNeedsBarrier() ? "Barrier digit: " + DG.barrier + " (tap a bar to change)" : "No barrier needed";
+  $("dgQ").innerHTML = '<div class="row"><span>Chance of winning</span><b>' + (prob * 100).toFixed(0) + '%</b></div>' +
+    '<div class="row"><span>Payout if you win</span><b>' + payout.toFixed(2) + ' USD</b></div>' +
+    '<div class="row"><span>Practice balance</span><b>' + dgBal().toFixed(2) + ' USD</b></div>';
+}
+
+function dgRenderTables(){
+  var o = "";
+  DG.open.forEach(function(c){
+    o += "<tr><td>" + c.market + "</td><td>" + c.type + (c.needs ? " " + c.barrier : "") + "</td><td>" + c.stake.toFixed(2) + "</td><td>" + (c.total - c.digits.length) + " left</td><td>" + c.digits.join(" ") + "</td></tr>";
+  });
+  $("dgOpen").innerHTML = o || '<tr><td colspan="5" class="tag">No open contracts</td></tr>';
+
+  var h = "", net = 0;
+  DG.hist.slice(0, 10).forEach(function(c){
+    h += "<tr><td>" + new Date(c.time).toLocaleTimeString() + "</td><td>" + c.market + "</td><td>" + c.type + (c.needs ? " " + c.barrier : "") + "</td><td>" + c.stake.toFixed(2) + "</td><td>" + c.exit + "</td><td class='" + (c.win ? "up" : "dn") + "'>" + (c.win ? "+" + c.profit.toFixed(2) : "-" + c.stake.toFixed(2)) + "</td></tr>";
+  });
+  DG.hist.forEach(function(c){ net += c.win ? c.profit : -c.stake; });
+  $("dgHist").innerHTML = h || '<tr><td colspan="6" class="tag">No results yet</td></tr>';
+  $("dgNet").textContent = "Net result this session: " + (net >= 0 ? "+" : "") + net.toFixed(2) + " USD";
+}
+
+function dgBuy(){
+  if (!localStorage.getItem("eliteUser")){ toast("Please sign in first"); return; }
+  var stake = Number($("dgS").value);
+  var dur = Math.round(Number($("dgD").value));
+  if (!stake || stake < 1 || stake > 500){ toast("Stake must be 1 to 500"); return; }
+  if (!dur || dur < 1 || dur > 10){ toast("Duration must be 1 to 10 ticks"); return; }
+  if (stake > dgBal()){ toast("Not enough practice balance"); return; }
+  var prob = dgProb(DG.type, DG.barrier);
+  if (prob <= 0){ toast("That contract can never win. Pick another barrier"); return; }
+  dgSetBal(dgBal() - stake);
+  DG.open.push({
+    market: DG.market, type: DG.type, barrier: DG.barrier, needs: dgNeedsBarrier(),
+    stake: stake, total: dur, digits: [], payout: stake * DG.margin / prob
+  });
+  toast("Contract bought");
+  dgRender();
+}
+
+function dgTick(){
+  Object.keys(DG.markets).forEach(dgTickOne);
+  var still = [];
+  DG.open.forEach(function(c){
+    var t = DG.ticks[c.market];
+    c.digits.push(t[t.length - 1].d);
+    if (c.digits.length >= c.total){
+      var exit = c.digits[c.digits.length - 1];
+      var win = dgWin(c.type, c.barrier, exit);
+      if (win) dgSetBal(dgBal() + c.payout);
+      DG.hist.unshift({
+        time: Date.now(), market: c.market, type: c.type, barrier: c.barrier, needs: c.needs,
+        stake: c.stake, exit: exit, win: win, profit: c.payout - c.stake
+      });
+      toast(win ? "You won +" + (c.payout - c.stake).toFixed(2) : "You lost " + c.stake.toFixed(2));
+    } else {
+      still.push(c);
+    }
+  });
+  DG.open = still;
+  if ($("digits").classList.contains("on")) dgRender();
+}
+
+$("dgM").onchange = function(){ DG.market = $("dgM").value; dgRender(); };
+$("dgW").onchange = dgRender;
+$("dgS").oninput = dgQuote;
+$("dgT").querySelectorAll("button").forEach(function(btn){
+  btn.onclick = function(){
+    $("dgT").querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+    btn.classList.add("on");
+    DG.type = btn.getAttribute("data-t");
+    dgRender();
+  };
+});
+$("dgBuy").onclick = dgBuy;
+
+setInterval(dgTick, 1000);
+dgRender();
 
 </script>
 </body>
