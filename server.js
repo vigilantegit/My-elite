@@ -31,6 +31,7 @@ const Payment = mongoose.model(
     checkoutRequestID: String,
     status: { type: String, default: "pending" },
     receipt: String,
+credited: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   })
 );
