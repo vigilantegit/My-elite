@@ -948,6 +948,61 @@ $("dgBuy").onclick = dgBuy;
 
 setInterval(dgTick, 1000);
 dgRender();
+// ---------- Credit M-Pesa deposits ----------
+var KES_PER_USD = 129;
+
+function creditDeposits(){
+  var email = localStorage.getItem("eliteUser");
+  if (!email) return;
+  fetch(API + "/payments/credit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.success && d.creditedKES > 0){
+        var usd = d.creditedKES / KES_PER_USD;
+        var a = getAcct();
+        a.usdt += usd;
+        a.deposits = a.deposits || [];
+        a.deposits.unshift({ time: Date.now(), method: "M-Pesa", usd: usd });
+        saveAcct(a);
+        renderOrders();
+        updateTicket();
+        refreshPages();
+        toast("Deposit credited: $" + usd.toFixed(2));
+      }
+    })
+    .catch(function(){});
+}
+
+// Sandbox test button in the Wallet page
+(function addSimButton(){
+  var b = document.createElement("button");
+  b.className = "mini";
+  b.style.marginTop = "10px";
+  b.textContent = "Sandbox: simulate payment success";
+  b.onclick = function(){
+    var email = localStorage.getItem("eliteUser");
+    if (!email){ toast("Please sign in first"); return; }
+    fetch(API + "/payments/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d.success){ creditDeposits(); }
+        else { toast(d.error || "Nothing to simulate"); }
+      })
+      .catch(function(){ toast("Cannot reach server"); });
+  };
+  $("wst").parentNode.appendChild(b);
+})();
+
+setInterval(creditDeposits, 15000);
+creditDeposits();
 
 </script>
 </body>
