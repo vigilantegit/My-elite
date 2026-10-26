@@ -837,6 +837,19 @@ $("pair").onchange = function(){
   loadCandles().catch(function(){});
   refreshMarket();
 };
+// ---------- Fix: stop crypto timers when EUR/USD is selected ----------
+(function(){
+  var realTicker = loadTicker;
+  var realBook = loadBook;
+  loadTicker = function(){
+    if (market.pair === "EUR/USD") return Promise.resolve();
+    return realTicker();
+  };
+  loadBook = function(){
+    if (market.pair === "EUR/USD") return Promise.resolve();
+    return realBook();
+  };
+})();
 </script>
 </body>
 </html>
