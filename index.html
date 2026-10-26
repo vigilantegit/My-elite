@@ -365,6 +365,48 @@ document.querySelectorAll("nav button").forEach(function(b){
 
 var saved = localStorage.getItem("eliteUser");
 if (saved){ showApp(saved); } else { showAuth(); }
+// ---------- M-Pesa deposit ----------
+$("wgo").onclick = function(){
+  var email = localStorage.getItem("eliteUser");
+  if (!email){ toast("Please sign in first"); return; }
+
+  var amountUSD = Number($("wa").value);
+  if (!amountUSD || amountUSD < 1){ toast("Enter an amount"); return; }
+
+  var phone = prompt("Enter your M-Pesa phone number (for sandbox testing use 254708374149)");
+  if (!phone) return;
+
+  var kes = Math.round(amountUSD * 129);
+  var st = $("wst");
+  var btn = $("wgo");
+  var label = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = "Please wait...";
+  st.className = "st show";
+  st.textContent = "Sending M-Pesa request for KES " + kes + "...";
+
+  fetch(API + "/deposit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email, phone: phone, amount: kes })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      btn.disabled = false;
+      btn.textContent = label;
+      if (data.success){
+        st.textContent = data.message;
+      } else {
+        st.textContent = data.error || "Something went wrong";
+      }
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.textContent = label;
+      st.textContent = "Cannot reach server. If it was idle, wait 50 seconds and try again.";
+    });
+};
 </script>
 </body>
 </html>
