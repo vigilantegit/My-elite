@@ -524,6 +524,121 @@ $("tf").querySelectorAll("button").forEach(function(b){
 reloadAll();
 setInterval(refreshMarket, 4000);
 setInterval(function(){ loadCandles().catch(function(){}); }, 30000);
+// ---------- Practice trading ----------
+var side = "buy";
+var FEE = 0.0005;
+
+function acctKey(){ return "eliteAcct_" + (localStorage.getItem("eliteUser") || "guest"); }
+
+function getAcct(){
+  var a = null;
+  try { a = JSON.parse(localStorage.getItem(acctKey())); } catch(e){}
+  if (!a) a = { usdt: 10000, coins: {}, orders: [] };
+  return a;
+}
+
+function saveAcct(a){ localStorage.setItem(acctKey(), JSON.stringify(a)); }
+
+function base(){ return market.pair.split("/")[0]; }
+
+function orderPrice(){
+  if ($("ot").value === "Market") return market.price;
+  return Number($("pr").value) || market.price;
+}
+
+function updateTicket(){
+  var a = getAcct();
+  var p = orderPrice();
+  var sz = Number($("sz").value) || 0;
+  var val = p * sz;
+  $("val").textContent = val.toFixed(2) + " USDT";
+  $("fee").textContent = (val * FEE).toFixed(2) + " USDT";
+  if (side === "buy"){
+    $("tavl").textContent = "Available";
+    $("tav").textContent = a.usdt.toFixed(2) + " USDT";
+  } else {
+    $("tavl").textContent = "Available " + base();
+    $("tav").textContent = (a.coins[base()] || 0).toFixed(6) + " " + base();
+  }
+  $("go").textContent = (side === "buy" ? "Buy " : "Sell ") + base();
+  $("go").className = "cta" + (side === "sell" ? " sell" : "");
+}
+
+function renderOrders(){
+  var a = getAcct();
+  var t = $("opt");
+  if (!a.orders.length){
+    t.innerHTML = '<tr><td class="tag">No orders yet</td></tr>';
+  } else {
+    var h = "<tr><th>Time</th><th>Pair</th><th>Side</th><th>Price</th><th>Size</th><th>Status</th></tr>";
+    a.orders.slice(0, 15).forEach(function(o){
+      h += "<tr><td>" + new Date(o.time).toLocaleTimeString() + "</td><td>" + o.pair + "</td><td class='" + (o.side === "buy" ? "up" : "dn") + "'>" + o.side.toUpperCase() + "</td><td>" + fmt(o.price) + "</td><td>" + o.size + "</td><td><span class='bdg ok'>Filled</span></td></tr>";
+    });
+    t.innerHTML = h;
+  }
+  var b = "USDT " + a.usdt.toFixed(2);
+  Object.keys(a.coins).forEach(function(k){
+    if (a.coins[k] > 0) b += "  |  " + k + " " + a.coins[k].toFixed(6);
+  });
+  $("bals").textContent = "Practice balances: " + b;
+  $("bal").textContent = a.usdt.toFixed(2) + " USDT";
+}
+
+function placeOrder(){
+  if (!localStorage.getItem("eliteUser")){ toast("Please sign in first"); return; }
+  var a = getAcct();
+  var sz = Number($("sz").value);
+  var p = orderPrice();
+  if (!sz || sz <= 0 || !p){ toast("Enter a valid size"); return; }
+  var val = p * sz;
+  var fee = val * FEE;
+  var b = base();
+
+  if (side === "buy"){
+    if (val + fee > a.usdt){ toast("Not enough USDT"); return; }
+    a.usdt -= (val + fee);
+    a.coins[b] = (a.coins[b] || 0) + sz;
+  } else {
+    if (sz > (a.coins[b] || 0)){ toast("Not enough " + b); return; }
+    a.coins[b] -= sz;
+    a.usdt += (val - fee);
+  }
+  a.orders.unshift({ time: Date.now(), pair: market.pair, side: side, price: p, size: sz });
+  saveAcct(a);
+  renderOrders();
+  updateTicket();
+  toast((side === "buy" ? "Bought " : "Sold ") + sz + " " + b);
+}
+
+$("side").querySelectorAll("button").forEach(function(btn, i){
+  btn.onclick = function(){
+    side = i === 0 ? "buy" : "sell";
+    $("side").querySelectorAll("button").forEach(function(x){ x.classList.remove("on"); });
+    btn.classList.add("on");
+    updateTicket();
+  };
+});
+
+$("rg").oninput = function(){
+  var a = getAcct();
+  var p = orderPrice();
+  var pct = Number($("rg").value) / 100;
+  if (!p) return;
+  var sz = side === "buy" ? (a.usdt * pct) / (p * (1 + FEE)) : (a.coins[base()] || 0) * pct;
+  $("sz").value = sz.toFixed(6);
+  updateTicket();
+};
+
+["sz", "pr", "ot"].forEach(function(id){
+  $(id).oninput = updateTicket;
+  $(id).onchange = updateTicket;
+});
+
+$("go").onclick = placeOrder;
+
+setInterval(updateTicket, 2000);
+renderOrders();
+updateTicket();
 </script>
 </body>
 </html>
