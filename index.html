@@ -1424,6 +1424,134 @@ function start(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,300));
   else setTimeout(start,300);
 })();
+/* ===== ELITE BRIDGE 2: M-Pesa deposits via Render server ===== */
+(function(){
+  if(window.__eliteBridge2)return;
+  window.__eliteBridge2=true;
+
+  const API='https://my-elite-backend-q62s.onrender.com';
+  const RATE=129; // KES per USD, same as the server
+  let user=null;
+  try{user=JSON.parse(localStorage.getItem('eliteUser'))}catch(e){}
+  if(!user||!user.email)return;
+
+  const $=s=>document.querySelector(s);
+  const CREDITED_KEY='eliteCreditedIds_'+user.email;
+  let credited=[];
+  try{credited=JSON.parse(localStorage.getItem(CREDITED_KEY))||[]}catch(e){}
+
+  function status(msg){
+    const s=$('#wst');
+    if(s){s.className='st show';s.textContent=msg}
+  }
+
+  // Take over the Deposit button for M-Pesa only
+  function hook(){
+    const btn=$('#wgo');
+    if(!btn||btn.__elite)return;
+    btn.__elite=true;
+    btn.addEventListener('click',async ev=>{
+      const dep=(typeof st!=='undefined')&&st.wmode==='Deposit'&&st.wmeth==='mpesa';
+      if(!dep)return;
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+
+      const usd=+($('#wa').value);
+      if(!(usd>0)){status('Enter an amount greater than 0.');return}
+      const amountKES=Math.round(usd*RATE);
+      const phone=(user.phone||'').replace(/\D/g,'')||'254708374149';
+
+      btn.disabled=true;
+      status('Sending M-Pesa request…');
+      try{
+        const r=await fetch(API+'/deposit',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email:user.email,phone:phone,amount:amountKES})
+        });
+        const j=await r.json().catch(()=>({}));
+        if(!r.ok){status(j.error||j.message||'Deposit failed. Try again.');return}
+        status('Check your phone and enter your M-Pesa PIN. Waiting for payment…');
+        addSimButton();
+        poll();
+      }catch(e){
+        status('Cannot reach the server. Wait 30 seconds and try again.');
+      }finally{btn.disabled=false}
+    },true);
+  }
+
+  // Sandbox only: simulate payment success
+  function addSimButton(){
+    const s=$('#wst');
+    if(!s||s.querySelector('.eSim'))return;
+    const b=document.createElement('button');
+    b.className='mini eSim';
+    b.style.marginLeft='8px';
+    b.textContent='Sandbox: simulate payment success';
+    b.onclick=async()=>{
+      try{
+        await fetch(API+'/payments/simulate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({email:user.email})
+        });
+        status('Simulated. Crediting…');
+        check();
+      }catch(e){status('Simulate failed.')}
+    };
+    s.append(b);
+  }
+
+  // Credit confirmed payments into the practice USDT balance
+  async function check(){
+    try{
+      const r=await fetch(API+'/payments/credit',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:user.email})
+      });
+      const j=await r.json().catch(()=>({}));
+      const list=j.payments||j.credited||j||[];
+      if(!Array.isArray(list))return 0;
+      let total=0;
+      list.forEach(p=>{
+        const id=p.checkoutRequestID||p._id||p.id;
+        if(!id||credited.includes(id))return;
+        const usd=(+p.amountKES||0)/RATE;
+        if(usd>0){creditLocal(usd,id);credited.push(id);total+=usd}
+      });
+      if(total>0){
+        localStorage.setItem(CREDITED_KEY,JSON.stringify(credited));
+        status('Deposit confirmed: +$'+total.toFixed(2)+'. Your balance is updated.');
+        if(typeof sync==='function')sync();
+      }
+      return total;
+    }catch(e){return 0}
+  }
+
+  // Add USD to the local practice account (USDT available, stored in cents)
+  function creditLocal(usd,id){
+    try{
+      const S=LOCAL_ENGINE._state();
+      const key='u1:USDT:a';
+      S.A[key]=(S.A[key]||0)+Math.round(usd*100);
+      S.deps.push({id:++S.n.d,user_id:1,method:'mpesa',amount_cents:Math.round(usd*100),status:'confirmed',key:'mp-'+id,at:Date.now()});
+      localStorage.setItem('elite.local.v1',JSON.stringify(S));
+    }catch(e){console.log('credit error',e)}
+  }
+
+  function poll(n=60){
+    setTimeout(async()=>{
+      const got=await check();
+      if(got>0)return;
+      if(n>0)poll(n-1);
+    },3000);
+  }
+
+  setInterval(hook,1000);
+  setTimeout(check,3000);
+  setInterval(check,15000);
+})();
   
 </script>
 </body>
