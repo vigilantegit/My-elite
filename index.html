@@ -1552,6 +1552,57 @@ function start(){
   setTimeout(check,3000);
   setInterval(check,15000);
 })();
+/* ===== ELITE BRIDGE 3: phone number box on the M-Pesa deposit form ===== */
+(function(){
+  if(window.__eliteBridge3)return;
+  window.__eliteBridge3=true;
+
+  let user=null;
+  try{user=JSON.parse(localStorage.getItem('eliteUser'))}catch(e){}
+  if(!user||!user.email)return;
+
+  const SAVED='elitePhone_'+user.email;
+
+  function build(){
+    const amt=document.getElementById('wa');
+    if(!amt||document.getElementById('wphone'))return;
+
+    const wrap=document.createElement('div');
+    wrap.id='wphoneWrap';
+    wrap.innerHTML=
+      '<label for="wphone">M-Pesa phone number</label>'+
+      '<input id="wphone" type="tel" inputmode="numeric" placeholder="254708374149" autocomplete="tel">';
+    amt.parentNode.insertBefore(wrap,amt.previousElementSibling||amt);
+
+    const inp=document.getElementById('wphone');
+    inp.value=localStorage.getItem(SAVED)||(user.phone||'').replace(/\D/g,'')||'254708374149';
+    inp.addEventListener('input',()=>{
+      localStorage.setItem(SAVED,inp.value.replace(/\D/g,''));
+    });
+  }
+
+  // show the box only when Deposit + M-Pesa is selected
+  function toggle(){
+    const w=document.getElementById('wphoneWrap');
+    if(!w||typeof st==='undefined')return;
+    w.style.display=(st.wmode==='Deposit'&&st.wmeth==='mpesa')?'block':'none';
+  }
+
+  // make the deposit use the phone typed in the box
+  function patchUser(){
+    const inp=document.getElementById('wphone');
+    if(!inp)return;
+    const p=inp.value.replace(/\D/g,'');
+    if(p)user.phone=p;
+    try{localStorage.setItem('eliteUser',JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('eliteUser'))||{},{phone:user.phone})))}catch(e){}
+  }
+
+  document.addEventListener('click',ev=>{
+    if(ev.target&&ev.target.id==='wgo')patchUser();
+  },true);
+
+  setInterval(()=>{build();toggle()},800);
+})();
   
 </script>
 </body>
