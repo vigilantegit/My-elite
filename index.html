@@ -1629,6 +1629,23 @@ function start(){
 
   setInterval(()=>{build();toggle()},800);
 })();
+/* ===== ELITE BRIDGE 5: simulate button only for the owner ===== */
+(function(){
+  // PUT YOUR EXACT EMAIL HERE (lowercase), between the quotes.
+  // You can list more than one, separated by commas.
+  const OWNERS=['dicksonjosphat2@gmail.com'];
+
+  let user=null;
+  try{user=JSON.parse(localStorage.getItem('eliteUser'))}catch(e){}
+  const isOwner=!!(user&&user.email&&OWNERS.includes(user.email.trim().toLowerCase()));
+
+  function sweep(){
+    document.querySelectorAll('.eSim').forEach(b=>{
+      b.style.display=isOwner?'':'none';
+    });
+  }
+  setInterval(sweep,500);
+})();
   
 </script>
 </body>
