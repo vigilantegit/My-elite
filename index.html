@@ -1336,76 +1336,12 @@ return{init,update,seg}})();
 
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
-/* ===== ELITE BRIDGE 1: real sign-in through the Render server ===== */
-(function(){
-  const API='https://my-elite-backend-q62s.onrender.com';
-  const KEY='eliteUser';
-  let user=null;
-  try{user=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-
-  function showGate(){
-    const g=document.getElementById('auth');
-    if(!g)return;
-    g.style.display='flex';
-    let mode='in';
-    const tabs=[...document.querySelectorAll('#atab button')];
-    const go=document.getElementById('ago');
-    const err=m=>{document.getElementById('aerr').textContent=m||''};
-    // hide parts that only the old server used
-    ['afw','arw'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none'});
-    tabs.forEach((b,i)=>{b.onclick=()=>{
-      mode=i?'up':'in';
-      tabs.forEach(x=>x.classList.toggle('on',x===b));
-      go.textContent=i?'Create account':'Sign in';
-      err('');
-    }});
-    const run=async()=>{
-      err('');
-      const email=document.getElementById('ae').value.trim();
-      const password=document.getElementById('ap').value;
-      if(!email||!password){err('Enter your email and password.');return}
-      go.disabled=true;
-      try{
-        const body={email,password};
-        if(mode==='up')body.name=email.split('@')[0];
-        const r=await fetch(API+(mode==='up'?'/signup':'/login'),{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(body)
-        });
-        const j=await r.json().catch(()=>({}));
-        if(!r.ok){err(j.error||j.message||'Something went wrong. Try again.');return}
-        user=j.user||{email:email,phone:j.phone||''};
-        if(!user.email)user.email=email;
-        localStorage.setItem(KEY,JSON.stringify(user));
-        g.style.display='none';
-        location.reload();
-      }catch(e){
-        err('Cannot reach the server. It may be waking up, wait 30 seconds and try again.');
-      }finally{go.disabled=false}
-    };
-    go.onclick=run;
-    ['ae','ap'].forEach(i=>document.getElementById(i).onkeydown=ev=>{if(ev.key==='Enter')run()});
-  }
-
-  function addSignOut(){
-    const who=document.getElementById('who'),lo=document.getElementById('lo');
-    if(who&&user)who.textContent=user.email;
-    if(lo){
-      lo.hidden=false;
-      lo.onclick=()=>{localStorage.removeItem(KEY);location.reload()};
-    }
-  }
-
-  function start(){
-    if(!user||!user.email){showGate();return}
-    addSignOut();
-    window.ELITE_USER=user;
-  }
+}
   window.ELITE_API=API;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,300));
   else setTimeout(start,300);
 })();
+  
 </script>
 </body>
 </html>
