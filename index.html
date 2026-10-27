@@ -1646,6 +1646,14 @@ function start(){
   }
   setInterval(sweep,500);
 })();
+/* ===== labels for name and phone boxes ===== */
+setInterval(()=>{
+  const n=document.getElementById('an'),p=document.getElementById('aph'),w=document.getElementById('wphone');
+  if(n)n.placeholder='Full name';
+  if(p)p.placeholder='Phone: 254708374149';
+  if(w)w.placeholder='Phone: 254708374149';
+},500);
+Commit, refresh, and tap Create account. The boxes
   
 </script>
 </body>
