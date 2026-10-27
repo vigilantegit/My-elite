@@ -14,31 +14,7 @@
 <link rel="icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
-/* ===== ELITE BRIDGE 4: separate practice account per user ===== */
-(function(){
-  let user=null;
-  try{user=JSON.parse(localStorage.getItem('eliteUser'))}catch(e){}
-  if(!user||!user.email)return;
 
-  const OLD='elite.local.v1';
-  const NEW='elite.local.v1.'+user.email.toLowerCase();
-
-  // one-time: give the current device data to the first account that signs in
-  try{
-    if(!localStorage.getItem(NEW)&&localStorage.getItem(OLD)&&!localStorage.getItem('eliteLegacyClaimed')){
-      localStorage.setItem(NEW,localStorage.getItem(OLD));
-      localStorage.setItem('eliteLegacyClaimed',user.email.toLowerCase());
-    }
-  }catch(e){}
-
-  // redirect the app's storage key to this user's own key
-  const gi=Storage.prototype.getItem,si=Storage.prototype.setItem,ri=Storage.prototype.removeItem;
-  const map=k=>k===OLD?NEW:k;
-  Storage.prototype.getItem=function(k){return gi.call(this,this===localStorage?map(k):k)};
-  Storage.prototype.setItem=function(k,v){return si.call(this,this===localStorage?map(k):k,v)};
-  Storage.prototype.removeItem=function(k){return ri.call(this,this===localStorage?map(k):k)};
-})();
-</script>
 <style>
 
 :root{--bg:#f6f3ec;--panel:#fffdf8;--line:#e3dccb;--tx:#1a1710;--mute:#7a7261;--up:#0d8f6b;--dn:#c93a4f;--ac:#b8892b;--acx:#fffdf8;--in:#efe9db}
