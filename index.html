@@ -204,3 +204,36 @@ tr:last-child td{border:0}
  <div class="g c2">
   <div class="p">
    <div class="seg" id="wm"><button class="buy on">Deposit</button><button class="sell">Withdraw</button></div>
+   <h2>Payment method</h2>
+   <div class="mth" id="mth"><button class="on" data-m="mpesa">M-Pesa<small>Instant</small></button><button data-m="bank">Bank<small>1–2 days</small></button><button data-m="binance">Binance<small>USDT</small></button></div>
+   <div id="fld"></div>
+   <label for="wa">Amount (USD)</label><input id="wa" type="number" value="100" min="1">
+   <div class="row"><span id="eqL">≈ KES</span><b id="eq2">12,900</b></div>
+   <div class="row"><span>Fee</span><b id="wf">$0.00</b></div>
+   <button class="cta" id="wgo" style="background:var(--ac);color:var(--acx)">Deposit with M-Pesa</button>
+   <div class="st" id="wst" role="status"></div>
+   <div class="hint" id="wnote" hidden></div>
+  </div>
+  <div class="p"><h2>Balance</h2><div class="big" id="wbal">–</div><div class="row"><span>Available to withdraw</span><b id="wav">–</b></div><div class="row"><span>In open orders</span><b id="wheld">–</b></div>
+   <h2 style="margin-top:18px">Recent activity</h2><div id="wh"><div class="tag">Loading…</div></div></div>
+ </div>
+</section>
+<input id="phone" placeholder="07xxxxxxxx" />
+<input id="amount" type="number" placeholder="Amount" />
+<button onclick="deposit()">Deposit with M-Pesa</button>
+
+<script>
+  async function deposit() {
+    const phone = document.getElementById('phone').value;
+    const amount = document.getElementById('amount').value;
+    const res = await fetch('/mpesa/stkpush', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, amount }),
+    });
+    const data = await res.json();
+    if (data.ResponseCode === '0') {
+      alert('Check your phone and enter your M-Pesa PIN.');
+    } else {
+      alert('Something went wrong. Try again.');
+
