@@ -168,3 +168,39 @@ tr:last-child td{border:0}
     <div class="dgs" id="dgStream"></div>
     <h2 style="margin:14px 0 4px">Last-digit frequency</h2>
     <div class="tag">Green bar = most frequent, red = least frequent. Ring = the latest digit. Tap a bar to pick it as your barrier. Each digit is 10% likely on a random market, whatever the recent pattern.</div>
+    <div class="dgbars" id="dgBars"></div>
+   </div>
+   <div class="p"><h2>Open contracts</h2><div class="tw"><table><thead><tr><th>Market</th><th>Contract</th><th>Stake</th><th>Ticks</th><th>Digits so far</th></tr></thead><tbody id="dgOpen"></tbody></table></div></div>
+   <div class="p"><h2>Recent results</h2><div class="tw"><table><thead><tr><th>Time</th><th>Market</th><th>Contract</th><th>Stake</th><th>Exit digit</th><th>Result</th></tr></thead><tbody id="dgHist"></tbody></table></div><div class="tag" id="dgNet" style="margin-top:8px"></div></div>
+  </div>
+  <div class="p">
+   <h2>Choose a contract</h2>
+   <div class="dgt" id="dgT"><button data-t="match" class="on">Matches</button><button data-t="differs">Differs</button><button data-t="over">Over</button><button data-t="under">Under</button><button data-t="even">Even</button><button data-t="odd">Odd</button></div>
+   <div class="tag" id="dgBarLbl" style="margin:10px 0 0"></div>
+   <label for="dgD">Duration (ticks, 1 to 10)</label><input id="dgD" type="number" min="1" max="10" step="1" value="1">
+   <label for="dgS">Stake (USD)</label><input id="dgS" type="number" min="1" max="500" step="1" value="10">
+   <div id="dgQ" style="margin-top:10px"></div>
+   <button class="cta" id="dgBuy">Buy contract</button>
+   <div class="tag" style="margin-top:10px">Matches/Differs: does the last digit of the final tick equal your barrier? Over/Under: is it above/below your barrier? Even/Odd: is it even or odd? The result uses the last digit of the price on the final tick after you buy.</div>
+  </div>
+ </div>
+</section>
+
+<section id="dash">
+ <div class="g c4" style="margin-bottom:12px">
+  <div class="p stat"><small>Account value</small><b id="dEq">–</b></div>
+  <div class="p stat"><small>Cash (USDT)</small><b id="dCash">–</b></div>
+  <div class="p stat"><small>Open orders</small><b id="dOrd">–</b></div>
+  <div class="p stat"><small>Deposited, last 30 days</small><b id="dDep">–</b></div>
+ </div>
+ <div class="g c2">
+  <div class="p"><h2>Where your money is</h2><div class="alloc" id="dBar"></div><div id="dLeg"></div></div>
+  <div class="p"><h2>Funding sources, last 30 days</h2><div class="alloc" id="fBar"></div><div id="fLeg"></div><button class="mini" style="margin-top:8px" id="gw">Add funds</button></div>
+ </div>
+ <div class="p" style="margin-top:12px"><h2>Recent orders</h2><div class="tw"><table id="dTr"></table></div></div>
+</section>
+
+<section id="wallet">
+ <div class="g c2">
+  <div class="p">
+   <div class="seg" id="wm"><button class="buy on">Deposit</button><button class="sell">Withdraw</button></div>
