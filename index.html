@@ -99,3 +99,32 @@ tr:last-child td{border:0}
 .dgb.sel{border-color:var(--ac);background:var(--in)}
 .dgb .pct{font-style:normal;font-size:11px;color:var(--mute)}.dgb .col{height:110px;width:70%;display:flex;align-items:flex-end;background:var(--in);border-radius:5px;overflow:hidden}
 .dgb u{display:block;width:100%;background:var(--mute);text-decoration:none}.dgb.hi u{background:var(--up)}.dgb.lo u{background:var(--dn)}
+.dgb b{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid transparent}.dgb b.now{border-color:var(--ac);color:var(--ac)}
+.dgt{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--in);padding:3px;border-radius:9px}
+.dgt button{border:0;background:none;color:var(--mute);font:inherit;font-weight:700;padding:9px 4px;border-radius:7px;cursor:pointer}.dgt button.on{background:var(--ac);color:var(--acx)}
+.dgg{grid-template-columns:minmax(0,1fr)}.dgg>*{min-width:0}
+@media(min-width:900px){.dgg{grid-template-columns:minmax(0,1fr) 320px}}
+.dgb{min-width:0}.dgbars{min-width:0}
+@media(max-width:600px){.dgbars{gap:2px}.dgb .pct{font-size:9px}.dgb b{width:22px;height:22px}.dgc{width:24px;height:24px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M8 15l3-4 2 2 3-5"/></svg>Elite</div>
+  <nav id="nav"><button class="on" data-t="trade">Trade</button><button data-t="digits" id="navDg" hidden>Digits</button><button data-t="dash">Dashboard</button><button data-t="wallet">Wallet</button><button data-t="acct" id="navAcct" hidden>Account</button></nav>
+  <div class="sp"></div>
+  <div class="live"><span class="dot"></span><b id="mode">Connecting…</b><span class="tag" id="bal"></span><span class="tag who" id="who"></span><button class="mini" id="lo" hidden>Sign out</button><button class="mini" id="rs" hidden title="Erase the practice data on this device">Reset</button></div>
+</header>
+
+<div id="auth" style="display:none;position:fixed;inset:0;z-index:20;background:var(--bg);align-items:center;justify-content:center;padding:16px;overflow:auto">
+ <div class="p" style="width:100%;max-width:380px">
+  <div class="logo" style="margin-bottom:12px">Elite</div>
+  <div class="seg gold" id="atab"><button type="button" class="buy on">Sign in</button><button type="button" class="buy">Create account</button></div>
+  <label for="ae">Email</label><input id="ae" type="email" autocomplete="username" inputmode="email">
+  <label for="ap">Password</label><input id="ap" type="password" autocomplete="current-password">
+  <div id="acw" style="display:none"><label for="ac">Authenticator code</label><input id="ac" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div>
+  <div id="aerr" class="tag" style="color:var(--dn);min-height:20px;margin-top:10px" role="alert"></div>
+  <button class="cta" id="ago" style="background:var(--ac);color:var(--acx)">Sign in</button>
+  <div class="tag" style="margin-top:12px">New passwords need 10+ characters with a number or symbol.</div>
+ </div>
+</div>
