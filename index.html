@@ -128,3 +128,43 @@ tr:last-child td{border:0}
   <div class="tag" style="margin-top:12px">New passwords need 10+ characters with a number or symbol.</div>
  </div>
 </div>
+<main>
+
+<section id="trade" class="on">
+ <div class="notice" id="notice" hidden><strong id="noticeT"></strong><p id="noticeP"></p></div>
+ <div class="g trade">
+  <div class="g" style="align-content:start">
+   <div class="p">
+    <div class="ph"><select id="pair" aria-label="Market" style="width:auto;font-weight:700;font-size:16px"><option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option></select><span class="big" id="px">–</span><span id="chg"></span>
+     <div class="tf" id="tf"><button>15m</button><button class="on">1h</button><button>4h</button><button>1d</button></div></div>
+    <svg id="chart" viewBox="0 0 640 300" role="img" aria-label="Candlestick chart"></svg>
+   </div>
+   <div class="p"><h2 id="oph">Open orders</h2><div class="tw"><table id="opt"><tr><td class="tag">Loading…</td></tr></table></div><div class="tag" id="bals" style="margin-top:10px"></div></div>
+  </div>
+  <div class="p"><h2>Order book</h2><div class="ob" id="ob"></div></div>
+  <div class="p">
+   <div class="seg" id="side"><button class="buy on">Buy</button><button class="sell">Sell</button></div>
+   <label for="ot">Order type</label><select id="ot"><option>Limit</option><option>Market</option></select>
+   <label for="tif">Duration</label><select id="tif"><option value="GTC">Good till cancelled</option><option value="3600">Expires in 1 hour</option><option value="86400">Expires in 24 hours</option><option value="IOC">Fill now or cancel</option></select>
+   <label for="pr">Price (USDT)</label><input id="pr" type="number" step="any">
+   <label for="sz" id="szl">Size (BTC)</label><input id="sz" type="number" value="0.01" step="any">
+   <input id="rg" type="range" min="0" max="100" value="25" aria-label="Percent of balance">
+   <div class="row"><span>Order value</span><b id="val">0.00 USDT</b></div>
+   <div class="row"><span id="tavl">Available</span><b id="tav">–</b></div>
+   <div class="row"><span>Est. fee (0.05%)</span><b id="fee">0.00 USDT</b></div>
+   <button class="cta" id="go">Buy BTC</button>
+  </div>
+ </div>
+</section>
+
+<section id="digits">
+ <div class="notice"><strong>PRACTICE ONLY</strong><p>Digit contracts use practice money on a random-number market. Each contract pays slightly less than fair odds (3% house margin), so over time you lose on average. Real-money digit or fixed-time contracts are banned or need a licence in many countries and are not offered on live accounts.</p></div>
+ <div class="g dgg">
+  <div class="g" style="align-content:start">
+   <div class="p">
+    <div class="ph"><select id="dgM" aria-label="Market" style="width:auto;font-weight:700;font-size:16px"></select><span class="dgpx" id="dgPx"></span>
+     <select id="dgW" aria-label="Ticks analysed" style="width:auto;margin-left:auto"><option value="25">Last 25 ticks</option><option value="50">Last 50</option><option value="100" selected>Last 100</option><option value="500">Last 500</option></select></div>
+    <div class="tag" style="margin:6px 0">Last digit of each of the 20 latest ticks (green = price rose, red = fell)</div>
+    <div class="dgs" id="dgStream"></div>
+    <h2 style="margin:14px 0 4px">Last-digit frequency</h2>
+    <div class="tag">Green bar = most frequent, red = least frequent. Ring = the latest digit. Tap a bar to pick it as your barrier. Each digit is 10% likely on a random market, whatever the recent pattern.</div>
